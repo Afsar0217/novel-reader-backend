@@ -239,7 +239,7 @@ io.on('connection', (socket) => {
     const msg = { ...message, id: uuidv4(), timestamp: Date.now() }
     room.messages.push(msg)
     if (room.messages.length > 200) room.messages = room.messages.slice(-200)
-    io.to(roomId).emit('chat:message', { message: msg })
+    socket.to(roomId).emit('chat:message', { message: msg })
   })
 
   /* ── Role transfer: give up control ─────────────────── */
