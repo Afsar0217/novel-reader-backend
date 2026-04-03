@@ -15,14 +15,30 @@ const { v4: uuidv4 } = require('uuid')
 const app    = express()
 const server = http.createServer(app)
 
-const FRONTEND_URL = process.env.FRONTEND_URL || '*'
+// Strip trailing slash so CORS origin matching is always exact
+const rawOrigin    = process.env.FRONTEND_URL || '*'
+const FRONTEND_URL = rawOrigin === '*' ? '*' : rawOrigin.replace(/\/+$/, '')
 
-app.use(cors({ origin: FRONTEND_URL, credentials: true }))
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, mobile apps) or matching origin
+    if (!origin || FRONTEND_URL === '*' || origin === FRONTEND_URL) {
+      callback(null, true)
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`))
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+}
+
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))   // handle preflight for all routes
 app.use(express.json())
 
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: FRONTEND_URL === '*' ? '*' : [FRONTEND_URL],
     methods: ['GET', 'POST'],
     credentials: true,
   },
